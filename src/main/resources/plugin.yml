@@ -1,0 +1,24 @@
+name: NotematicPlayer
+version: '${version}'
+author: Cayden26
+description: Companion plugin for Notematic Studio. Plays custom note block music sequences loaded from JSON or mcfunction files.
+
+main: me.cayde26.notematicPlayer.NotematicPlayer
+api-version: '1.20'
+load: POSTWORLD
+
+commands:
+  notematic:
+    description: Control the Notematic Player music playback.
+    usage: /notematic [play|stop|list|reload]
+    permission: notematic.use
+    permission-message: §cYou do not have permission to use this command.
+
+permissions:
+  notematic.use:
+    description: Allows using the basic commands of Notematic Player.
+    default: true
+  notematic.admin:
+    description: Allows administrative commands of Notematic Player.
+    default: op
+

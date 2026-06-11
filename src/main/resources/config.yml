@@ -1,0 +1,4 @@
+# Notematic Player Configuration
+
+# Whether normal players (non-OPs and non-admins) can use Notematic commands.
+player-commands-enabled: true
