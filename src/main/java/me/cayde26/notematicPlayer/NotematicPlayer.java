@@ -387,6 +387,38 @@ public final class NotematicPlayer extends JavaPlugin {
     }
 
     /**
+     * Seek all active songs for a player.
+     *
+     * @param player The target player
+     * @param seekValueStr The seek value string (e.g. "+10s", "-5t", "100")
+     * @return true if any song was successfully seeked, false otherwise
+     */
+    public boolean seekSong(Player player, String seekValueStr) {
+        if (playbackManager != null && player != null) {
+            return playbackManager.seekPlayback(player, seekValueStr);
+        }
+        return false;
+    }
+
+    /**
+     * Seek a specific playing song for a player.
+     *
+     * @param player The target player
+     * @param songName The name of the song to seek (case-insensitive)
+     * @param seekValueStr The seek value string (e.g. "+10s", "-5t", "100")
+     * @return true if the song was found and seeked, false otherwise
+     */
+    public boolean seekSong(Player player, String songName, String seekValueStr) {
+        if (playbackManager != null && player != null && songManager != null && songName != null) {
+            Song song = songManager.getSong(songName);
+            if (song != null) {
+                return playbackManager.seekPlayback(player, song, seekValueStr);
+            }
+        }
+        return false;
+    }
+
+    /**
      * Set the global volume multiplier for a song.
      *
      * @param songName The name of the song

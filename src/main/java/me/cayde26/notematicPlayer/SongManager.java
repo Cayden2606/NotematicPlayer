@@ -14,12 +14,16 @@ public class SongManager {
     private final JavaPlugin plugin;
     private final File songsFolder;
     private final File volumesFile;
+    private final File publicFolder;
+    private final File privateFolder;
     private final Map<String, Song> songs = new HashMap<>();
 
     public SongManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.songsFolder = new File(plugin.getDataFolder(), "songs");
         this.volumesFile = new File(plugin.getDataFolder(), "volumes.yml");
+        this.publicFolder = new File(songsFolder, "public");
+        this.privateFolder = new File(songsFolder, "private");
         init();
     }
 
@@ -27,31 +31,50 @@ public class SongManager {
         if (!songsFolder.exists()) {
             songsFolder.mkdirs();
         }
+        if (!publicFolder.exists()) {
+            publicFolder.mkdirs();
+        }
+        if (!privateFolder.exists()) {
+            privateFolder.mkdirs();
+        }
 
         loadSongs();
     }
 
     public void loadSongs() {
         songs.clear();
-        File[] files = songsFolder.listFiles();
+        
+        // Load legacy songs from the root songs folder (treated as public)
+        loadSongsFromDirectory(songsFolder, false);
+        
+        // Load public songs
+        loadSongsFromDirectory(publicFolder, false);
+        
+        // Load private songs
+        loadSongsFromDirectory(privateFolder, true);
+        
+        loadSongVolumes();
+        saveSongVolumes(); // Purges deleted songs from configuration
+        
+        plugin.getLogger().info("Total songs loaded: " + songs.size());
+    }
+
+    private void loadSongsFromDirectory(File dir, boolean isPrivate) {
+        File[] files = dir.listFiles();
         if (files != null) {
             for (File file : files) {
                 if (file.isFile() && (file.getName().endsWith(".mcfunction") || file.getName().endsWith(".json"))) {
                     try {
                         Song song = SongParser.parseSong(file);
+                        song.setPrivate(isPrivate);
                         songs.put(song.getName().toLowerCase(), song);
-                        plugin.getLogger().info("Loaded song '" + song.getName() + "' with " + song.getNotes().size() + " notes.");
+                        plugin.getLogger().info("Loaded " + (isPrivate ? "private " : "") + "song '" + song.getName() + "' with " + song.getNotes().size() + " notes.");
                     } catch (IOException e) {
                         plugin.getLogger().log(Level.WARNING, "Failed to load song file " + file.getName(), e);
                     }
                 }
             }
         }
-        
-        loadSongVolumes();
-        saveSongVolumes(); // Purges deleted songs from configuration
-        
-        plugin.getLogger().info("Total songs loaded: " + songs.size());
     }
 
     private void loadSongVolumes() {

@@ -8,6 +8,7 @@ public class Song {
     private final List<SongNote> notes;
     private final int maxTick;
     private double volumeMultiplier = 1.0;
+    private boolean isPrivate = false;
 
     public Song(String name, double tempo, List<SongNote> notes) {
         this.name = name;
@@ -45,6 +46,14 @@ public class Song {
 
     public void setVolumeMultiplier(double volumeMultiplier) {
         this.volumeMultiplier = volumeMultiplier;
+    }
+
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean isPrivate) {
+        this.isPrivate = isPrivate;
     }
 }
 

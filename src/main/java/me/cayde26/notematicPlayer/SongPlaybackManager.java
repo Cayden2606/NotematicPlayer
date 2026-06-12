@@ -79,8 +79,13 @@ public class SongPlaybackManager {
     }
 
     private void playNoteToPlayer(Player player, SongNote note, Song song, boolean positional) {
-        Sound sound = getSoundFromInstrument(note.getInstrument());
-        
+        if (song.isPrivate()) {
+            if (!player.hasPermission("notematic.admin") && !player.isOp()) {
+                return;
+            }
+            positional = false;
+        }
+
         double playerVolMultiplier = 1.0;
         if (plugin instanceof NotematicPlayer) {
             playerVolMultiplier = ((NotematicPlayer) plugin).getPlayerVolume(player);
@@ -89,10 +94,20 @@ public class SongPlaybackManager {
         float volume = (float) (note.getVolume() * song.getVolumeMultiplier() * playerVolMultiplier);
         float pitch = (float) note.getNote();
 
-        if (positional) {
-            player.getWorld().playSound(player.getLocation(), sound, SoundCategory.RECORDS, volume, pitch);
+        String instrument = note.getInstrument();
+        if (instrument != null && (instrument.contains(":") || instrument.contains(".") || instrument.contains("/"))) {
+            if (positional) {
+                player.getWorld().playSound(player.getLocation(), instrument, SoundCategory.RECORDS, volume, pitch);
+            } else {
+                player.playSound(player.getLocation(), instrument, SoundCategory.RECORDS, volume, pitch);
+            }
         } else {
-            player.playSound(player.getLocation(), sound, SoundCategory.RECORDS, volume, pitch);
+            Sound sound = getSoundFromInstrument(instrument);
+            if (positional) {
+                player.getWorld().playSound(player.getLocation(), sound, SoundCategory.RECORDS, volume, pitch);
+            } else {
+                player.playSound(player.getLocation(), sound, SoundCategory.RECORDS, volume, pitch);
+            }
         }
     }
 
@@ -248,6 +263,70 @@ public class SongPlaybackManager {
             }
         }
     }
+
+    public boolean seekPlayback(Player player, String seekValueStr) {
+        boolean seekedAny = false;
+        for (SongPlayback playback : playbacks) {
+            if (playback.getListenerUuid().equals(player.getUniqueId())) {
+                if (playback.seek(seekValueStr)) {
+                    seekedAny = true;
+                    if (playback.isShowChatMessage()) {
+                        player.sendMessage("§eSeeked '" + playback.getSong().getName() + "' to " + formatPosition(playback));
+                    }
+                }
+            }
+        }
+        return seekedAny;
+    }
+
+    public boolean seekPlayback(Player player, Song song, String seekValueStr) {
+        for (SongPlayback playback : playbacks) {
+            if (playback.getListenerUuid().equals(player.getUniqueId()) && 
+                playback.getSong().getName().equalsIgnoreCase(song.getName())) {
+                if (playback.seek(seekValueStr)) {
+                    if (playback.isShowChatMessage()) {
+                        player.sendMessage("§eSeeked '" + playback.getSong().getName() + "' to " + formatPosition(playback));
+                    }
+                    return true;
+                }
+                break;
+            }
+        }
+        return false;
+    }
+
+    public void seekAll(String seekValueStr) {
+        for (SongPlayback playback : playbacks) {
+            if (playback.seek(seekValueStr)) {
+                Player player = Bukkit.getPlayer(playback.getListenerUuid());
+                if (player != null && player.isOnline() && playback.isShowChatMessage()) {
+                    player.sendMessage("§ePlayback seeked by server to " + formatPosition(playback));
+                }
+            }
+        }
+    }
+
+    public void seekAll(Song song, String seekValueStr) {
+        for (SongPlayback playback : playbacks) {
+            if (playback.getSong().getName().equalsIgnoreCase(song.getName())) {
+                if (playback.seek(seekValueStr)) {
+                    Player player = Bukkit.getPlayer(playback.getListenerUuid());
+                    if (player != null && player.isOnline() && playback.isShowChatMessage()) {
+                        player.sendMessage("§ePlayback for '" + song.getName() + "' seeked by server to " + formatPosition(playback));
+                    }
+                }
+            }
+        }
+    }
+
+    private String formatPosition(SongPlayback playback) {
+        Song song = playback.getSong();
+        double currentTick = playback.getCurrentVirtualTick();
+        double tempo = song.getTempo();
+        double seconds = currentTick / (20.0 * tempo);
+        return String.format("%.1fs (%.0ft)", seconds, currentTick);
+    }
+
 
     public boolean isPaused(Player player) {
         for (SongPlayback playback : playbacks) {

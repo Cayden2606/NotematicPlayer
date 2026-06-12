@@ -95,5 +95,40 @@ public class SongParser {
             throw new IOException("Failed to parse song JSON structure: " + e.getMessage(), e);
         }
     }
+
+    public static Song parseMimicSequence(File file) throws IOException {
+        String fileName = file.getName();
+        String songName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+        String content = readFileContent(file);
+        
+        try {
+            JsonArray rootArray = JsonParser.parseString(content).getAsJsonArray();
+            List<SongNote> notes = new ArrayList<>();
+            
+            for (JsonElement groupElem : rootArray) {
+                JsonObject groupObj = groupElem.getAsJsonObject();
+                int startTick = groupObj.has("startTick") ? groupObj.get("startTick").getAsInt() : 0;
+                
+                if (groupObj.has("sounds")) {
+                    JsonArray soundsArray = groupObj.getAsJsonArray("sounds");
+                    for (JsonElement soundElem : soundsArray) {
+                        JsonObject soundObj = soundElem.getAsJsonObject();
+                        String sound = soundObj.has("sound") ? soundObj.get("sound").getAsString() : "minecraft:block.note_block.harp";
+                        double volume = soundObj.has("volume") ? soundObj.get("volume").getAsDouble() : 1.0;
+                        double pitch = soundObj.has("pitch") ? soundObj.get("pitch").getAsDouble() : 1.0;
+                        
+                        notes.add(new SongNote(sound, pitch, volume, startTick));
+                    }
+                }
+            }
+            
+            // Ensure notes are sorted by their trigger time
+            notes.sort(Comparator.comparingInt(SongNote::getWhen));
+            
+            return new Song(songName, 1.0, notes);
+        } catch (Exception e) {
+            throw new IOException("Failed to parse mimic sequence JSON structure: " + e.getMessage(), e);
+        }
+    }
 }
 

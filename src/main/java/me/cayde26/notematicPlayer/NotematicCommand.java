@@ -56,6 +56,12 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
             case "stop":
                 handleStop(sender, args);
                 break;
+            case "seek":
+                handleSeek(sender, args);
+                break;
+            case "stopall":
+                handleStopAll(sender, args);
+                break;
             case "volume":
                 handleVolume(sender, args);
                 break;
@@ -82,9 +88,11 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
     private void sendHelp(CommandSender sender) {
         sender.sendMessage("§6§l--- Notematic Player Commands ---");
         sender.sendMessage("§e/notematic play <song> [player/@a/*] [showChatMessage] [positional] §7- Play a song");
-        sender.sendMessage("§e/notematic pause [player/@a/*]      §7- Pause playing music");
-        sender.sendMessage("§e/notematic resume [player/@a/*]     §7- Resume playing music");
-        sender.sendMessage("§e/notematic stop [player/@a/*]       §7- Stop playing music");
+        sender.sendMessage("§e/notematic pause [player/song] [song] §7- Pause playing music");
+        sender.sendMessage("§e/notematic resume [player/song] [song] §7- Resume playing music");
+        sender.sendMessage("§e/notematic stop [player/song] [song]  §7- Stop playing music");
+        sender.sendMessage("§e/notematic stopall [player/@a/*]     §7- Stop all playing music");
+        sender.sendMessage("§e/notematic seek <[+|-]value[s|t]> [player/song] [song] §7- Seek forward/back or to absolute time");
         sender.sendMessage("§e/notematic volume <value>           §7- Adjust your personal volume (0-100%)");
         sender.sendMessage("§e/notematic list                    §7- List all loaded songs");
         sender.sendMessage("§e/notematic active                  §7- Show all currently playing songs");
@@ -116,7 +124,7 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
 
         String songName = args[1];
         Song song = songManager.getSong(songName);
-        if (song == null) {
+        if (song == null || (song.isPrivate() && !sender.hasPermission("notematic.admin") && !sender.isOp())) {
             sender.sendMessage("§cSong '" + songName + "' not found! Use §f/notematic list§c to see available songs.");
             return;
         }
@@ -253,12 +261,22 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
         String target = null;
         
         if (args.length >= 2) {
-            target = args[1];
-            if (args.length >= 3) {
-                String songName = args[2];
-                specificSong = songManager.getSong(songName);
+            String arg1 = args[1];
+            boolean isPlayerTarget = arg1.equalsIgnoreCase("@a") || arg1.equals("*") || Bukkit.getPlayer(arg1) != null;
+            if (isPlayerTarget) {
+                target = arg1;
+                if (args.length >= 3) {
+                    String songName = args[2];
+                    specificSong = songManager.getSong(songName);
+                    if (specificSong == null) {
+                        sender.sendMessage("§cSong '" + songName + "' not found!");
+                        return;
+                    }
+                }
+            } else {
+                specificSong = songManager.getSong(arg1);
                 if (specificSong == null) {
-                    sender.sendMessage("§cSong '" + songName + "' not found!");
+                    sender.sendMessage("§cTarget player not online or song '" + arg1 + "' not found!");
                     return;
                 }
             }
@@ -297,10 +315,21 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
             }
         } else {
             if (sender instanceof Player) {
-                playbackManager.pausePlayback((Player) sender);
+                if (specificSong != null) {
+                    playbackManager.pausePlayback((Player) sender, specificSong);
+                } else {
+                    playbackManager.pausePlayback((Player) sender);
+                }
             } else {
-                playbackManager.pauseAll();
-                sender.sendMessage("§aPaused all active playbacks.");
+                if (specificSong != null) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        playbackManager.pausePlayback(player, specificSong);
+                    }
+                    sender.sendMessage("§aPaused '" + specificSong.getName() + "' for all players.");
+                } else {
+                    playbackManager.pauseAll();
+                    sender.sendMessage("§aPaused all active playbacks.");
+                }
             }
         }
     }
@@ -310,12 +339,22 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
         String target = null;
         
         if (args.length >= 2) {
-            target = args[1];
-            if (args.length >= 3) {
-                String songName = args[2];
-                specificSong = songManager.getSong(songName);
+            String arg1 = args[1];
+            boolean isPlayerTarget = arg1.equalsIgnoreCase("@a") || arg1.equals("*") || Bukkit.getPlayer(arg1) != null;
+            if (isPlayerTarget) {
+                target = arg1;
+                if (args.length >= 3) {
+                    String songName = args[2];
+                    specificSong = songManager.getSong(songName);
+                    if (specificSong == null) {
+                        sender.sendMessage("§cSong '" + songName + "' not found!");
+                        return;
+                    }
+                }
+            } else {
+                specificSong = songManager.getSong(arg1);
                 if (specificSong == null) {
-                    sender.sendMessage("§cSong '" + songName + "' not found!");
+                    sender.sendMessage("§cTarget player not online or song '" + arg1 + "' not found!");
                     return;
                 }
             }
@@ -354,27 +393,52 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
             }
         } else {
             if (sender instanceof Player) {
-                playbackManager.resumePlayback((Player) sender);
+                if (specificSong != null) {
+                    playbackManager.resumePlayback((Player) sender, specificSong);
+                } else {
+                    playbackManager.resumePlayback((Player) sender);
+                }
             } else {
-                playbackManager.resumeAll();
-                sender.sendMessage("§aResumed all active playbacks.");
+                if (specificSong != null) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        playbackManager.resumePlayback(player, specificSong);
+                    }
+                    sender.sendMessage("§aResumed '" + specificSong.getName() + "' for all players.");
+                } else {
+                    playbackManager.resumeAll();
+                    sender.sendMessage("§aResumed all active playbacks.");
+                }
             }
         }
     }
 
     private void handleStop(CommandSender sender, String[] args) {
+        Song specificSong = null;
+        String target = null;
+        
         if (args.length >= 2) {
-            String target = args[1];
-            Song specificSong = null;
-            if (args.length >= 3) {
-                String songName = args[2];
-                specificSong = songManager.getSong(songName);
+            String arg1 = args[1];
+            boolean isPlayerTarget = arg1.equalsIgnoreCase("@a") || arg1.equals("*") || Bukkit.getPlayer(arg1) != null;
+            if (isPlayerTarget) {
+                target = arg1;
+                if (args.length >= 3) {
+                    String songName = args[2];
+                    specificSong = songManager.getSong(songName);
+                    if (specificSong == null) {
+                        sender.sendMessage("§cSong '" + songName + "' not found!");
+                        return;
+                    }
+                }
+            } else {
+                specificSong = songManager.getSong(arg1);
                 if (specificSong == null) {
-                    sender.sendMessage("§cSong '" + songName + "' not found!");
+                    sender.sendMessage("§cTarget player not online or song '" + arg1 + "' not found!");
                     return;
                 }
             }
+        }
 
+        if (target != null) {
             if (target.equalsIgnoreCase("@a") || target.equals("*")) {
                 if (!sender.hasPermission("notematic.admin") && !sender.isOp()) {
                     sender.sendMessage("§cYou do not have permission to stop songs for all players.");
@@ -411,7 +475,54 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
                 }
             }
         } else {
-            // Stop for sender or all (if console)
+            if (sender instanceof Player) {
+                if (specificSong != null) {
+                    playbackManager.stopPlayback((Player) sender, specificSong);
+                } else {
+                    playbackManager.stopPlayback((Player) sender);
+                }
+            } else {
+                if (specificSong != null) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        playbackManager.stopPlayback(player, specificSong);
+                    }
+                    sender.sendMessage("§aStopped playing '" + specificSong.getName() + "' for all players.");
+                } else {
+                    playbackManager.stopAll();
+                    sender.sendMessage("§aStopped all active playbacks.");
+                }
+            }
+        }
+    }
+
+    private void handleStopAll(CommandSender sender, String[] args) {
+        String target = null;
+        if (args.length >= 2) {
+            target = args[1];
+        }
+
+        if (target != null) {
+            if (target.equalsIgnoreCase("@a") || target.equals("*")) {
+                if (!sender.hasPermission("notematic.admin") && !sender.isOp()) {
+                    sender.sendMessage("§cYou do not have permission to stop songs for all players.");
+                    return;
+                }
+                playbackManager.stopAll();
+                sender.sendMessage("§aStopped all active playbacks for all players.");
+            } else {
+                if (!sender.hasPermission("notematic.admin") && !sender.isOp() && !sender.getName().equalsIgnoreCase(target)) {
+                    sender.sendMessage("§cYou do not have permission to stop songs for other players.");
+                    return;
+                }
+                Player targetPlayer = Bukkit.getPlayer(target);
+                if (targetPlayer == null || !targetPlayer.isOnline()) {
+                    sender.sendMessage("§cPlayer '" + target + "' is not online.");
+                    return;
+                }
+                playbackManager.stopPlayback(targetPlayer);
+                sender.sendMessage("§aStopped all playing music for player " + targetPlayer.getName() + ".");
+            }
+        } else {
             if (sender instanceof Player) {
                 playbackManager.stopPlayback((Player) sender);
             } else {
@@ -421,8 +532,112 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleSeek(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /notematic seek <[+|-]value[s|t]> [player/song] [song]");
+            return;
+        }
+
+        String seekValueStr = args[1];
+        String target = null;
+        Song specificSong = null;
+
+        if (args.length >= 3) {
+            String arg2 = args[2];
+            boolean isPlayerTarget = arg2.equalsIgnoreCase("@a") || arg2.equals("*") || Bukkit.getPlayer(arg2) != null;
+            if (isPlayerTarget) {
+                target = arg2;
+                if (args.length >= 4) {
+                    String songName = args[3];
+                    specificSong = songManager.getSong(songName);
+                    if (specificSong == null) {
+                        sender.sendMessage("§cSong '" + songName + "' not found!");
+                        return;
+                    }
+                }
+            } else {
+                specificSong = songManager.getSong(arg2);
+                if (specificSong == null) {
+                    sender.sendMessage("§cTarget player not online or song '" + arg2 + "' not found!");
+                    return;
+                }
+            }
+        }
+
+        if (target != null) {
+            if (target.equalsIgnoreCase("@a") || target.equals("*")) {
+                if (!sender.hasPermission("notematic.admin") && !sender.isOp()) {
+                    sender.sendMessage("§cYou do not have permission to seek songs for all players.");
+                    return;
+                }
+                if (specificSong != null) {
+                    playbackManager.seekAll(specificSong, seekValueStr);
+                    sender.sendMessage("§aSeeked '" + specificSong.getName() + "' for all online players.");
+                } else {
+                    playbackManager.seekAll(seekValueStr);
+                    sender.sendMessage("§aSeeked playback for all online players.");
+                }
+            } else {
+                if (!sender.hasPermission("notematic.admin") && !sender.isOp() && !sender.getName().equalsIgnoreCase(target)) {
+                    sender.sendMessage("§cYou do not have permission to seek songs for other players.");
+                    return;
+                }
+                Player targetPlayer = Bukkit.getPlayer(target);
+                if (targetPlayer == null || !targetPlayer.isOnline()) {
+                    sender.sendMessage("§cPlayer '" + target + "' is not online.");
+                    return;
+                }
+                if (specificSong != null) {
+                    if (playbackManager.seekPlayback(targetPlayer, specificSong, seekValueStr)) {
+                        sender.sendMessage("§aSeeked '" + specificSong.getName() + "' for player " + targetPlayer.getName() + ".");
+                    } else {
+                        sender.sendMessage("§cSong '" + specificSong.getName() + "' is not playing for player " + targetPlayer.getName() + ".");
+                    }
+                } else {
+                    if (playbackManager.seekPlayback(targetPlayer, seekValueStr)) {
+                        sender.sendMessage("§aSeeked playback for player " + targetPlayer.getName() + ".");
+                    } else {
+                        sender.sendMessage("§cNo active playbacks found for player " + targetPlayer.getName() + ".");
+                    }
+                }
+            }
+        } else {
+            if (sender instanceof Player) {
+                if (specificSong != null) {
+                    if (!playbackManager.seekPlayback((Player) sender, specificSong, seekValueStr)) {
+                        sender.sendMessage("§cSong '" + specificSong.getName() + "' is not playing for you.");
+                    }
+                } else {
+                    if (!playbackManager.seekPlayback((Player) sender, seekValueStr)) {
+                        sender.sendMessage("§cNo active playbacks found for you.");
+                    }
+                }
+            } else {
+                if (specificSong != null) {
+                    playbackManager.seekAll(specificSong, seekValueStr);
+                    sender.sendMessage("§aSeeked '" + specificSong.getName() + "' for all players.");
+                } else {
+                    playbackManager.seekAll(seekValueStr);
+                    sender.sendMessage("§aSeeked all active playbacks.");
+                }
+            }
+        }
+    }
+
+    private List<String> getVisibleSongNames(CommandSender sender) {
+        boolean isAdmin = sender.hasPermission("notematic.admin") || sender.isOp();
+        List<String> visible = new ArrayList<>();
+        for (String name : songManager.getSongNames()) {
+            Song song = songManager.getSong(name);
+            if (song != null && (!song.isPrivate() || isAdmin)) {
+                visible.add(song.getName());
+            }
+        }
+        return visible;
+    }
+
     private void handleList(CommandSender sender) {
-        List<String> songNames = new ArrayList<>(songManager.getSongNames());
+        List<String> songNames = getVisibleSongNames(sender);
         if (songNames.isEmpty()) {
             sender.sendMessage("§cNo songs currently loaded. Place them in plugins/NotematicPlayer/songs/.");
             return;
@@ -530,6 +745,8 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
             subCommands.add("pause");
             subCommands.add("resume");
             subCommands.add("stop");
+            subCommands.add("stopall");
+            subCommands.add("seek");
             subCommands.add("list");
             subCommands.add("active");
             subCommands.add("volume");
@@ -546,7 +763,7 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("play")) {
-                StringUtil.copyPartialMatches(args[1], songManager.getSongNames(), completions);
+                StringUtil.copyPartialMatches(args[1], getVisibleSongNames(sender), completions);
                 Collections.sort(completions);
                 return completions;
             } else if (args[0].equalsIgnoreCase("volume")) {
@@ -558,7 +775,7 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
                 suggestions.add("0.5");
                 suggestions.add("1.0");
                 if (sender.hasPermission("notematic.admin") || sender.isOp()) {
-                    suggestions.addAll(songManager.getSongNames());
+                    suggestions.addAll(getVisibleSongNames(sender));
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         suggestions.add(player.getName());
                     }
@@ -573,7 +790,30 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     targets.add(player.getName());
                 }
+                targets.addAll(getVisibleSongNames(sender));
                 StringUtil.copyPartialMatches(args[1], targets, completions);
+                Collections.sort(completions);
+                return completions;
+            } else if (args[0].equalsIgnoreCase("stopall")) {
+                List<String> targets = new ArrayList<>();
+                targets.add("@a");
+                targets.add("*");
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    targets.add(player.getName());
+                }
+                StringUtil.copyPartialMatches(args[1], targets, completions);
+                Collections.sort(completions);
+                return completions;
+            } else if (args[0].equalsIgnoreCase("seek")) {
+                List<String> suggestions = new ArrayList<>();
+                suggestions.add("+5s");
+                suggestions.add("+10s");
+                suggestions.add("-5s");
+                suggestions.add("-10s");
+                suggestions.add("+20t");
+                suggestions.add("-20t");
+                suggestions.add("0s");
+                StringUtil.copyPartialMatches(args[1], suggestions, completions);
                 Collections.sort(completions);
                 return completions;
             }
@@ -604,6 +844,25 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
                 suggestions.add("1.5");
                 StringUtil.copyPartialMatches(args[2], suggestions, completions);
                 return completions;
+            } else if (args[0].equalsIgnoreCase("stop") || args[0].equalsIgnoreCase("pause") || args[0].equalsIgnoreCase("resume")) {
+                String arg1 = args[1];
+                boolean isPlayerTarget = arg1.equalsIgnoreCase("@a") || arg1.equals("*") || Bukkit.getPlayer(arg1) != null;
+                if (isPlayerTarget) {
+                    StringUtil.copyPartialMatches(args[2], getVisibleSongNames(sender), completions);
+                    Collections.sort(completions);
+                    return completions;
+                }
+            } else if (args[0].equalsIgnoreCase("seek")) {
+                List<String> suggestions = new ArrayList<>();
+                suggestions.add("@a");
+                suggestions.add("*");
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    suggestions.add(player.getName());
+                }
+                suggestions.addAll(getVisibleSongNames(sender));
+                StringUtil.copyPartialMatches(args[2], suggestions, completions);
+                Collections.sort(completions);
+                return completions;
             }
         }
 
@@ -615,6 +874,14 @@ public class NotematicCommand implements CommandExecutor, TabCompleter {
                 StringUtil.copyPartialMatches(args[3], suggestions, completions);
                 Collections.sort(completions);
                 return completions;
+            } else if (args[0].equalsIgnoreCase("seek")) {
+                String arg2 = args[2];
+                boolean isPlayerTarget = arg2.equalsIgnoreCase("@a") || arg2.equals("*") || Bukkit.getPlayer(arg2) != null;
+                if (isPlayerTarget) {
+                    StringUtil.copyPartialMatches(args[3], getVisibleSongNames(sender), completions);
+                    Collections.sort(completions);
+                    return completions;
+                }
             }
         }
 
