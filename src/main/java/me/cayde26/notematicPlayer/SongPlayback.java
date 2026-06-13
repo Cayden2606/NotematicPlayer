@@ -1,40 +1,74 @@
 package me.cayde26.notematicPlayer;
 
+import org.bukkit.Location;
 import java.util.UUID;
 
 public class SongPlayback {
     private final Song song;
     private double currentVirtualTick;
     private int nextNoteIndex;
-    private final UUID listenerUuid; // null if global playback
+    private final UUID listenerUuid; // null if global/location playback
     private final boolean global;
     private boolean paused;
     private final boolean showChatMessage;
     private final boolean positional;
     private final String initiator;
+    
+    private int id;
+    private final Location location; // null if bound to a player
+    private final double radius;
+    private final boolean looping;
+    private double volumeMultiplier = 1.0;
 
     public SongPlayback(Song song, UUID listenerUuid) {
-        this(song, listenerUuid, true, false, "API");
+        this(song, listenerUuid, true, false, "API", false);
     }
 
     public SongPlayback(Song song, UUID listenerUuid, boolean showChatMessage) {
-        this(song, listenerUuid, showChatMessage, false, "API");
+        this(song, listenerUuid, showChatMessage, false, "API", false);
     }
 
     public SongPlayback(Song song, UUID listenerUuid, boolean showChatMessage, boolean positional) {
-        this(song, listenerUuid, showChatMessage, positional, "API");
+        this(song, listenerUuid, showChatMessage, positional, "API", false);
     }
 
     public SongPlayback(Song song, UUID listenerUuid, boolean showChatMessage, boolean positional, String initiator) {
+        this(song, listenerUuid, showChatMessage, positional, initiator, false);
+    }
+
+    public SongPlayback(Song song, UUID listenerUuid, boolean showChatMessage, boolean positional, String initiator, boolean looping) {
         this.song = song;
         this.listenerUuid = listenerUuid;
         this.global = (listenerUuid == null);
+        this.location = null;
+        this.radius = 0;
+        this.looping = looping;
         this.paused = false;
         this.showChatMessage = showChatMessage;
         this.positional = positional;
         this.initiator = initiator != null ? initiator : "API";
         
         // Start at first note's "when" tick to avoid leading silence
+        if (!song.getNotes().isEmpty()) {
+            this.currentVirtualTick = song.getNotes().get(0).getWhen();
+        } else {
+            this.currentVirtualTick = 0;
+        }
+        this.nextNoteIndex = 0;
+    }
+
+    public SongPlayback(Song song, Location location, double radius, boolean looping, boolean showChatMessage, String initiator) {
+        this.song = song;
+        this.listenerUuid = null;
+        this.global = true;
+        this.location = location;
+        this.radius = radius;
+        this.looping = looping;
+        this.paused = false;
+        this.showChatMessage = showChatMessage;
+        this.positional = true; // Location playbacks are inherently 3D
+        this.initiator = initiator != null ? initiator : "API";
+        
         if (!song.getNotes().isEmpty()) {
             this.currentVirtualTick = song.getNotes().get(0).getWhen();
         } else {
@@ -170,7 +204,11 @@ public class SongPlayback {
         if (targetTick < 0) {
             targetTick = 0;
         } else if (targetTick > maxTick) {
-            targetTick = maxTick;
+            if (looping && maxTick > 0) {
+                targetTick = targetTick % maxTick;
+            } else {
+                targetTick = maxTick;
+            }
         }
         this.currentVirtualTick = targetTick;
 
@@ -184,6 +222,34 @@ public class SongPlayback {
             index++;
         }
         this.nextNoteIndex = index;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    public boolean isLooping() {
+        return looping;
+    }
+
+    public double getVolumeMultiplier() {
+        return volumeMultiplier;
+    }
+
+    public void setVolumeMultiplier(double volumeMultiplier) {
+        this.volumeMultiplier = volumeMultiplier;
     }
 }
 

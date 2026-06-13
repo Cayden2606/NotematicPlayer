@@ -33,6 +33,7 @@ public final class NotematicPlayer extends JavaPlugin {
         // Initialize managers
         songManager = new SongManager(this);
         playbackManager = new SongPlaybackManager(this);
+        playbackManager.loadPersistentPlaybacks();
 
         // Register command
         NotematicCommand notematicCommand = new NotematicCommand(this, songManager, playbackManager);
@@ -118,6 +119,7 @@ public final class NotematicPlayer extends JavaPlugin {
     public void onDisable() {
         // Stop active playbacks
         if (playbackManager != null) {
+            playbackManager.prepareShutdown();
             playbackManager.stopAll();
             playbackManager.stopTickTask();
         }

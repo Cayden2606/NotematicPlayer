@@ -10,7 +10,7 @@ load: POSTWORLD
 commands:
   notematic:
     description: Control the Notematic Player music playback.
-    usage: /notematic [play|stop|list|reload]
+    usage: /notematic [play|stop|seek|list|active|volume|commands|reload]
     permission: notematic.use
     permission-message: §cYou do not have permission to use this command.
 
