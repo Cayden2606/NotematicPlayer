@@ -110,6 +110,21 @@ public class SongManager {
         return true;
     }
 
+    /**
+     * Load a single song file dynamically into the memory cache.
+     *
+     * @param file The song file to parse (.json or .mcfunction)
+     * @param isPrivate Whether the song is private
+     * @return The parsed Song object
+     * @throws IOException If parsing or reading fails
+     */
+    public Song loadSongFile(File file, boolean isPrivate) throws IOException {
+        Song song = SongParser.parseSong(file);
+        song.setPrivate(isPrivate);
+        songs.put(song.getName().toLowerCase(), song);
+        return song;
+    }
+
     public Song getSong(String name) {
         if (name == null) return null;
         return songs.get(name.toLowerCase());

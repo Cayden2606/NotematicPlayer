@@ -440,5 +440,14 @@ public final class NotematicPlayer extends JavaPlugin {
         Song song = songManager.getSong(songName);
         return song != null ? song.getVolumeMultiplier() : 1.0;
     }
+
+    /**
+     * Get the SongManager instance.
+     *
+     * @return The SongManager
+     */
+    public SongManager getSongManager() {
+        return songManager;
+    }
 }
 
