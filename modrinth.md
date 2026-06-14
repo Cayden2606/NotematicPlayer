@@ -1,6 +1,14 @@
 # Notematic Player
 
-A Minecraft Java plugin (Paper/Spigot 1.20.6 / 1.21 - 1.26.x) designed as the companion player for **Notematic Studio** (Coming Soon). It plays custom note block music sequences exported from the studio in `.json` or `.mcfunction` formats directly to players or positionally in the world. Beyond standard note block sounds, it can also play any in-game `/playsound` audio (including custom resource pack sounds) directly.
+<div align="center">
+
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/notematic-player?style=for-the-badge&logo=modrinth&color=24b47e)](https://modrinth.com/plugin/notematic-player)
+[![Minecraft Version Support](https://img.shields.io/badge/Minecraft-1.20.6%20--%201.26.x-blue?style=for-the-badge&logo=minecraft)](https://www.minecraft.net/)
+[![Server Software](https://img.shields.io/badge/Platform-Paper%20%7C%20Purpur%20%7C%20Spigot-gold?style=for-the-badge)](https://papermc.io)
+
+**Notematic Player** is a Minecraft Java plugin designed as the companion player for **Notematic Studio** (Coming Soon). It plays custom note block music sequences exported from the studio in `.json` or `.mcfunction` formats directly to players or positionally in the world. Beyond standard note block sounds, it can also play any in-game `/playsound` audio (including custom resource pack sounds) directly.
+
+</div>
 
 ## Features
 
@@ -9,6 +17,17 @@ A Minecraft Java plugin (Paper/Spigot 1.20.6 / 1.21 - 1.26.x) designed as the co
 * **Offline Sync:** If a player disconnects, the playback ticks virtually and resumes in sync when they rejoin.
 * **Jukebox Persistent Loops:** Location-based looping playbacks persist across server restarts and crashes.
 * **Notematic Studio Companion:** Plays files exported directly from the Notematic Studio MIDI converter utility.
+
+---
+
+## Official Addons
+
+### [Notematic Vocoder](https://modrinth.com/plugin/notematic-vocoder)
+An official sub-addon built on top of Notematic Player's engine. It uses Digital Signal Processing (DSP) to analyze Text-to-Speech audio, extract formant frequencies, and dynamically map them to Minecraft's sound system, allowing note blocks to "talk" in real-time.
+
+*   **Real-time In-Game Speech:** Speak aloud using note blocks via `/<command> <prompt>`.
+*   **6-Octave Voice Range:** Intelligently maps overlapping frequencies across 5 note block instruments (Bass, Guitar, Harp, Flute, Bell) to bypass Minecraft's default 2-octave limit.
+*   **100% Server-Side:** No mods or resource packs required by players. Fully compatible with vanilla clients.
 
 ---
 
@@ -31,7 +50,7 @@ A Minecraft Java plugin (Paper/Spigot 1.20.6 / 1.21 - 1.26.x) designed as the co
 | `/notematic reload` | `notematic.admin` | Stops all active songs and reloads the song folder (Admin only). |
 
 <details>
-<summary>🔍 View Detailed Command Instructions & Examples</summary>
+<summary>View Detailed Command Instructions & Examples</summary>
 
 ### Play Command
 Starts playing a song. Playback can target yourself, other players, all online players, or a physical 3D location in the world.
@@ -82,7 +101,7 @@ Notematic Player runs entirely server-sided, meaning vanilla clients do not need
 ---
 
 <details>
-<summary>📂 Music File Formats & Organization (.json / .mcfunction)</summary>
+<summary>Music File Formats & Organization (.json / .mcfunction)</summary>
 
 Place your music files in `plugins/NotematicPlayer/songs/`.
 
@@ -124,7 +143,7 @@ data modify storage music sheet set value {"tempo":1,"notes":[{"instrument":"har
 </details>
 
 <details>
-<summary>💻 Developer API Reference</summary>
+<summary>Developer API Reference</summary>
 
 Retrieve the plugin instance from Bukkit's plugin manager:
 ```java
