@@ -3,7 +3,7 @@
 <div align="center">
 
 [![Modrinth Downloads](https://img.shields.io/modrinth/dt/notematic-player?style=for-the-badge&logo=modrinth&color=24b47e)](https://modrinth.com/plugin/notematic-player)
-[![Minecraft Version Support](https://img.shields.io/badge/Minecraft-1.20.6%20--%201.26.x-blue?style=for-the-badge&logo=minecraft)](https://www.minecraft.net/)
+[![Minecraft Version Support](https://img.shields.io/badge/Minecraft-1.20.6%20--%2026.1.x-blue?style=for-the-badge&logo=minecraft)](https://www.minecraft.net/)
 [![Server Software](https://img.shields.io/badge/Platform-Paper%20%7C%20Purpur%20%7C%20Spigot-gold?style=for-the-badge)](https://papermc.io)
 
 **Notematic Player** is a Minecraft Java plugin designed as the companion player for **Notematic Studio** (Coming Soon). It plays custom note block music sequences exported from the studio in `.json` or `.mcfunction` formats directly to players or positionally in the world. Beyond standard note block sounds, it can also play any in-game `/playsound` audio (including custom resource pack sounds) directly.
@@ -92,7 +92,7 @@ Seeks playbacks forward, backward, or to an absolute time.
 
 ## Compatibility & Platforms
 
-Notematic Player runs entirely server-sided, meaning vanilla clients do not need to install any mods to hear the music. It is natively compatible with **1.20.6 and 1.21 - 1.26.x** on:
+Notematic Player runs entirely server-sided, meaning vanilla clients do not need to install any mods to hear the music. It is natively compatible with **1.20.6 and 1.21 - 26.1.x** on:
 * **Paper** (Recommended)
 * **Purpur**
 * **Spigot**
